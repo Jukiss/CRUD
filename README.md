@@ -57,7 +57,7 @@ CREATE TABLE users (
   "email": "new_email@example.com"}
 ```
 
-**Ответ:**
+- **Ответ:**
 
  ```json
 {"message": "User updated successfully"}
