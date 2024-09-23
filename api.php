@@ -1,21 +1,24 @@
 <?php
 header('Content-Type: application/json');
 $method = $_SERVER['REQUEST_METHOD'];
-$dbconn = 'mysql:host=localhost;dbname=cruda;charset=utf8';
+$dsn = 'mysql:host=localhost;dbname=cruda;charset=utf8';
 $username = 'root';
 $password = '';
 
 try {
-    $pdo = new PDO($dbconn, $username, $password);
+    $pdo = new PDO($dsn, $username, $password);
 } catch (PDOException $e) {
     echo json_encode(['error' => 'DB connection failed']);
     exit;
 }
 
 switch ($method) {
-
     case 'POST':
-        createUser();
+        if (isset($_GET['action']) && $_GET['action'] === 'login') {
+            authUser();
+        } else {
+            createUser();
+        }
         break;
     case 'GET':
         getUser();
@@ -26,15 +29,11 @@ switch ($method) {
     case 'DELETE':
         deleteUser();
         break;
-    case 'PUT':
-        authUser();
-        break;
-    default:
+        default:
         echo json_encode(['error' => 'Method not allowed']);
 }
 
 function createUser() {
-
     global $pdo;
     $data = json_decode(file_get_contents("php://input"), true);
     $login = $data['login'];
@@ -43,7 +42,7 @@ function createUser() {
 
     $stmt = $pdo->prepare("INSERT INTO users (login, password, email) VALUES (?, ?, ?)");
     if ($stmt->execute([$login, $password, $email])) {
-        echo json_encode(['message' => 'User created successfully']);
+        echo json_encode(['message' => 'User created']);
     } else {
         echo json_encode(['error' => 'Failed to create user']);
     }
@@ -64,7 +63,6 @@ function getUser() {
 }
 
 function updateUser() {
-
     global $pdo;
     $data = json_decode(file_get_contents("php://input"), true);
     $id = $_GET['id'];
@@ -91,9 +89,9 @@ function updateUser() {
 }
 
 function deleteUser() {
-
     global $pdo;
     $id = $_GET['id'];
+    
     $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
     if ($stmt->execute([$id])) {
         echo json_encode(['message' => 'User deleted']);
@@ -104,11 +102,9 @@ function deleteUser() {
 
 function authUser() {
     global $pdo;
-    parse_str(file_get_contents("php://input"), $_PUT);
-    
-    $login = $_PUT['login'];
-    $password = $_PUT['password'];
-
+    $data = json_decode(file_get_contents("php://input"), true);
+    $login = $data['login'];
+    $password = $data['password'];
     $stmt = $pdo->prepare("SELECT * FROM users WHERE login = ?");
     $stmt->execute([$login]);
     
